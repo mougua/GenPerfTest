@@ -6,10 +6,11 @@
 
   make
 
-  
+
 
 - 使用
   - Usage of genpjtest.exe:
+    ```
       -group string
             agent group
       -idip string
@@ -25,7 +26,10 @@
       -set string
             设置项，分别是 主叫开始项(忽略，仅为兼容pjtest而设),被叫开始项,数量，设置项之间用逗号隔
     开，多个设置用竖线隔开。例如：6101,6001,99|6300,6200,100
+    ```
+
   - Usage of gensipptest.exe:
+    ```
       -group string
             agent group
       -head string
@@ -33,6 +37,7 @@
       -set string
             设置项，分别是 主叫开始项,被叫开始项,数量，设置项之间用逗号隔开，多个设置用竖线隔开。例
     如："6101,6001,99|6300,6200,100"
+    ```
 
 - 例子
   - 详见 Makefile
