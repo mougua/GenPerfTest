@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+<!-- 
+	ronny
+	inbound_uac_makecall.xml
+	呼入压力测试
+	uac 仅发送呼叫消息到对端呼叫中心服务器，不播放语音文件。
+ -->
+<!--
+	说明：
+		inbound_call.csv文件：
+			格式：111111111;2020062801
+			引用时，
+			[field0]: 主叫；eg：18393810917
+			[field1]：被叫号码；eg：2020062801
+		shell环境执行：
+			sipp -i [sipp所在服务器IP] -p [sipp源端口] -sf [场景脚本文件] -inf [自定义数据文件] [呼叫中心服务器地址] -l [最大并发数] -trace_msg -trace_screen -trace_err -rtp_echo -aa -r [-rp参数时间段内发起的呼叫次数] -rp [该参数时间段内发起-r次呼叫] -m [本次最大呼叫数]
+
+			eg： sipp -i 192.168.1.122 -p 5062 -sf inbound_uac_makecall.xml -inf inbound_call.csv 192.168.1.11 -l 1500 -trace_msg -trace_screen -trace_err -rtp_echo -aa -r 200 -rp 1000 -m 10000
+
+			-sf：指定脚本
+			-inf：指定csv文件
+			-i：Sipp所在主机地址
+			-p：Sipp端口号
+			-aa: Enable automatic 200 OK answer for INFO, UPDATE and NOTIFY messages
+			-trace_screen：当程序结束时候打印统计信息并弹出屏幕
+			-rtp_echo： Enable RTP echo. RTP/UDP packets received on port defined by -mp are echoed
+                      to their sender.
+            -l  : Set the maximum number of simultaneous calls. Once this limit is reached,
+                  	traffic is decreased until the number of open calls goes down. Default:
+                    (3 * call_duration (s) * rate). 最大并发数
+            -m： 本次最大呼叫数，达到这个数值后，sipp 程序退出
+            -d： 对应 XML 文件中使用 pause 的参数，如果 pause 没有指定参数，则使用 -d 选项的参数，表示暂停时间，单位为ms
+            -r 10 -rp 10000： 表示10000ms内发起10次呼叫
+
+            
+         呼叫中心服务器配置：
+         	1. 将sipp 所在服务器IP和-p参数对应的端口加入允许呼入的网关配置中。
+            2. 被叫2020062801需要有对应的呼入流程
+-->
+
+<scenario name="make call">
+
+	<send retrans="500">
+
+	    <![CDATA[
+			INVITE sip:[field1]@[remote_ip]:[remote_port] SIP/2.0
+			Via: SIP/2.0/udp [local_ip]:[local_port];branch=[branch]
+			Max-Forwards: 70
+			From: [field0] <sip:[field0]@[local_ip]:[local_port]>;tag=[pid]SIPpTag00[call_number]
+			To: [field1] <sip:[field1]@[remote_ip]:[remote_port]>
+			Call-ID: [call_id]
+			CSeq: 1 INVITE
+			Contact: <sip:[field0]@[local_ip]:[local_port]>;transport=udp
+			Max-Forwards: 70
+			Subject: Performance Test
+			Content-Length: [len]
+			Content-Type: application/sdp
+
+			v=0
+			o=[field0] 53655765 2353687637 IN IP4 [local_ip]
+			s=Talk
+			c=IN IP4 [local_ip]
+			t=0 0
+			m=audio [auto_media_port] rtp/avp 0 8 9 101
+			a=rtpmap:9 G722/8000
+			a=rtpmap:0 pcmu/8000
+			a=rtpmap:8 pcma/8000
+			a=rtpmap:101 telephone-event/8000
+			a=fmtp:101 0-11,16
+			a=sendrecv
+			a=ptime:20
+		]]>
+
+    </send>
+
+    <recv response="100">
+    </recv>
+
+
+    <recv response="180" optional="true">
+    </recv>
+
+    <recv response="183" optional="true">
+    </recv>
+
+    <recv response="480" optional="true">
+    </recv>
+
+    <recv response="486" optional="true" next="19">
+    </recv>
+
+    <recv response="200" rtd="true" crlf="true" rrs="true">
+  	</recv>
+
+    <send>
+
+    	<![CDATA[
+			ACK sip:[field1]@[remote_ip]:[remote_port] SIP/2.0
+			Via: SIP/2.0/udp [local_ip]:[local_port];branch=[branch]
+			[routes]
+			From: sipp <sip:[field0]@[local_ip]:[local_port]>;tag=[pid]SIPpTag00[call_number]
+			To: [field1] <sip:[field1]@[remote_ip]:[remote_port]>[peer_tag_param]
+			Call-ID: [call_id]
+			CSeq: 1 ACK
+			Contact: sip:[field0]@[local_ip]:[local_port];transport=udp
+			Max-Forwards: 70
+			Subject: Performance Test
+			Content-Length: 0
+		]]>
+
+    </send>
+
+    <nop>
+     <action>
+       <exec play_pcap_audio="/root/g711a.pcap"/>
+     </action>
+    </nop>
+
+   
+
+    <label id="19"/>
+    <pause milliseconds = "10000"/>
+
+
+    <send retrans="500">
+
+    	<![CDATA[
+			BYE sip:[field1]@[remote_ip]:[remote_port] SIP/2.0
+			Via: SIP/2.0/udp [local_ip]:[local_port];branch=[branch]
+			[routes]
+			From: sipp <sip:[field0]@[local_ip]:[local_port]>;tag=[pid]SIPpTag00[call_number]
+			To: [field1] <sip:[field1]@[remote_ip]:[remote_port]>[peer_tag_param]
+			Call-ID: [call_id]
+			CSeq: 2 BYE
+			Contact: sip:[field0]@[local_ip]:[local_port]
+			Max-Forwards: 70
+			Subject: Performance Test
+			Content-Length: 0
+		]]>
+
+    </send>
+
+    <recv response="200" crlf="true">
+    </recv>
+
+    <ResponseTimeRepartition value="10, 20, 30, 40, 50, 100, 150, 200"/>
+    <CallLengthRepartition value="10, 50, 100, 500, 1000, 5000, 10000"/>
+
+</scenario>
