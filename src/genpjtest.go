@@ -52,11 +52,12 @@ func main() {
 			if content != "" {
 				content += "--next-account\n"
 			}
-			content += fmt.Sprintf("--id=sip:%s_%v@%s\n", *group, callee, *idIp)
+			content += fmt.Sprintf("--id=sip:%s%v@%s\n", *group, callee, *idIp)
 			content += fmt.Sprintf("--registrar=sip:%s\n", *registrar)
 			content += fmt.Sprintf("--realm=%s\n", *realm)
-			content += fmt.Sprintf("--username=%s_%v\n", *group, callee)
-			content += fmt.Sprintf("--password=%s\n\n", *password)
+			content += fmt.Sprintf("--username=%s%v\n", *group, callee)
+			content += fmt.Sprintf("--password=%s\n", *password)
+			content += "--reg-timeout=3000\n\n"
 
 			callee++
 

@@ -15,7 +15,7 @@ func main() {
 	if err := os.MkdirAll(sippPath, os.ModePerm); err != nil {
 		panic(err)
 	}
-
+	isFixNum := flag.Bool("fixnum", false, "是否固定号码")
 	group := flag.String("group", "", "agent group") //"10003"
 	setting := flag.String("set", "", "设置项，分别是 主叫开始项,被叫开始项,数量，设置项之间用逗号隔开，多个设置用竖线隔开。例如：\"6101,6001,99|6300,6200,100\"")
 	head := flag.String("head", "SEQUENTIAL", "文件头部设置，可以为SEQUENTIAL或RANDOM")
@@ -40,10 +40,15 @@ func main() {
 		}
 
 		for i := 0; i < count; i++ {
-			content += *group + "_" + strconv.FormatInt(caller, 10) + ";" +
-				*group + "_" + strconv.FormatInt(callee, 10) + "\n"
+			caller_s := strconv.FormatInt(caller, 10)
+			content += *group + caller_s + ";" +
+				*group + strconv.FormatInt(callee, 10) +
+				";[authentication username=" + caller_s + " password=888888]" +
+				"\n"
 			caller++
-			callee++
+			if !*isFixNum {
+				callee++
+			}
 		}
 	}
 
