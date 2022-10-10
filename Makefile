@@ -86,3 +86,18 @@ release-theme-prod	: clean build-test-windows
 		cp resource/sipp/* release/$(THEME_PATH)/sipp_test/; \
 	fi
 
+THEME_PATH=theme-test
+release-theme-test	: clean build-test-windows
+	rm -rf release/$(THEME_PATH)
+	mkdir -p release/$(THEME_PATH)
+	@if [ $(ARCH) = $(LINUX) ]; \
+	then \
+		echo $(ARCH); \
+	else \
+		echo $(ARCH); \
+		dist/windows/genpjtest.exe -group 10003_ -idip 10.150.94.5 -reg 10.150.94.5:6060 -password 888888 -set "6000,6000,451"; \
+		dist/windows/gensipptest.exe -group 10003_ -set "6500,87790001,400"; \
+		cp -r genfile/* release/$(THEME_PATH); \
+		cp resource/pjsua/* release/$(THEME_PATH)/pj_test/; \
+		cp resource/sipp/* release/$(THEME_PATH)/sipp_test/; \
+	fi

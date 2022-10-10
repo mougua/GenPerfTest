@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
 <!DOCTYPE scenario SYSTEM "sipp.dtd">
-<!-- 
+<!--
 	ronny
-	inbound_uac_makecall.xml
-	呼入压力测试
-	uac 仅发送呼叫消息到对端呼叫中心服务器，不播放语音文件。
+	makecall_calleeHangup.xml
+	用于呼入压力测试
+	uac 仅发送呼叫消息到对端呼叫中心服务器，一段时间后，接收对端的挂机消息。
  -->
 <!--
 	说明：
-		inbound_call.csv文件：
-			格式：111111111;2020062801
+		call_numbers.csv文件：
+			格式：111111111;20210323
 			引用时，
 			[field0]: 主叫；eg：18393810917
 			[field1]：被叫号码；eg：2020062801
+
 		shell环境执行：
 			sipp -i [sipp所在服务器IP] -p [sipp源端口] -sf [场景脚本文件] -inf [自定义数据文件] [呼叫中心服务器地址] -l [最大并发数] -trace_msg -trace_screen -trace_err -rtp_echo -aa -r [-rp参数时间段内发起的呼叫次数] -rp [该参数时间段内发起-r次呼叫] -m [本次最大呼叫数]
 
-			eg： sipp -i 192.168.1.122 -p 5062 -sf inbound_uac_makecall.xml -inf inbound_call.csv 192.168.1.11 -l 1500 -trace_msg -trace_screen -trace_err -rtp_echo -aa -r 200 -rp 1000 -m 10000
+			eg： sipp -i 192.168.1.238 -p 5061 -sf makecall_calleeHangup.xml -inf call_numbers.csv 192.168.1.213:6060 -l 1500 -trace_msg -trace_screen -trace_err -rtp_echo -aa -r 200 -rp 1000 -m 10000 -d 20000
 
 			-sf：指定脚本
 			-inf：指定csv文件
@@ -33,10 +34,10 @@
             -d： 对应 XML 文件中使用 pause 的参数，如果 pause 没有指定参数，则使用 -d 选项的参数，表示暂停时间，单位为ms
             -r 10 -rp 10000： 表示10000ms内发起10次呼叫
 
-            
+
          呼叫中心服务器配置：
          	1. 将sipp 所在服务器IP和-p参数对应的端口加入允许呼入的网关配置中。
-            2. 被叫2020062801需要有对应的呼入流程
+            2. 被叫 20210323 需要有对应的呼入流程
 -->
 
 <scenario name="make call">
@@ -63,9 +64,9 @@
 			c=IN IP4 [local_ip]
 			t=0 0
 			m=audio [auto_media_port] rtp/avp 0 8 9 101
+			a=rtpmap:0 PCMU/8000
+			a=rtpmap:8 PCMA/8000
 			a=rtpmap:9 G722/8000
-			a=rtpmap:0 pcmu/8000
-			a=rtpmap:8 pcma/8000
 			a=rtpmap:101 telephone-event/8000
 			a=fmtp:101 0-11,16
 			a=sendrecv
@@ -77,20 +78,21 @@
     <recv response="100">
     </recv>
 
+    <!--
+    <recv request="OPTIONS" next="18" optional="global">
+  	</recv>
+  -->
 
     <recv response="180" optional="true">
-    </recv>
+  	</recv>
 
-    <recv response="183" optional="true">
-    </recv>
-
-    <recv response="480" optional="true">
-    </recv>
-
-    <recv response="486" optional="true" next="19">
-    </recv>
+  	<recv response="183" optional="true">
+  	</recv>
 
     <recv response="200" rtd="true" crlf="true" rrs="true">
+     <action>
+             <exec rtp_stream="test1.wav,-1,0"/>
+     </action>
   	</recv>
 
     <send>
@@ -112,18 +114,16 @@
     </send>
 
     <nop>
-     <action>
-       <exec play_pcap_audio="/root/g711a.pcap"/>
-     </action>
     </nop>
+    <!-- <pause milliseconds = "15000"/> 使用命令行参数-d来指定-->
+	<pause />
+<!--fist  bye -->
+	<recv request="OPTIONS" optional="true">
+  	</recv>
 
-   
-
-    <label id="19"/>
-    <pause milliseconds = "10000"/>
-
-
-    <send retrans="500">
+    <recv request="BYE" next="18">
+  	</recv>
+    <send retrans="500" next="17">
 
     	<![CDATA[
 			BYE sip:[field1]@[remote_ip]:[remote_port] SIP/2.0
@@ -140,10 +140,23 @@
 		]]>
 
     </send>
-
+    <label id="18"/>
+    <send next="19">
+      <![CDATA[
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Server: sipp
+      Content-Length: 0
+    ]]>
+  </send>
+  	<label id="17"/>
     <recv response="200" crlf="true">
     </recv>
-
+    <label id="19"/>
     <ResponseTimeRepartition value="10, 20, 30, 40, 50, 100, 150, 200"/>
     <CallLengthRepartition value="10, 50, 100, 500, 1000, 5000, 10000"/>
 

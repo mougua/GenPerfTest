@@ -70,7 +70,8 @@ func main() {
 
 				if content != "" {
 					content += "--auto-answer=200\n"
-					content += "--auto-loop\n"
+					content += "--play-file=sample1.wav\n"
+					content += "--auto-play\n"
 					content += "--local-port=" + strconv.Itoa(*port) + "\n"
 					if err := ioutil.WriteFile(configFile, []byte(content), 0644); err != nil { // 写入配置文件
 						panic(err)

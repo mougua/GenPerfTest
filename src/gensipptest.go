@@ -42,8 +42,8 @@ func main() {
 		for i := 0; i < count; i++ {
 			caller_s := strconv.FormatInt(caller, 10)
 			content += *group + caller_s + ";" +
-				*group + strconv.FormatInt(callee, 10) +
-				";[authentication username=" + caller_s + " password=888888]" +
+				strconv.FormatInt(callee, 10) +
+				";[authentication username=" + *group + caller_s + " password=888888]" +
 				"\n"
 			caller++
 			if !*isFixNum {
